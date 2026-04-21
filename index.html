@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>БАНКа ЖЕСТЬяная · надёжно как крышка</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ГЛАВНАЯ СТРАНИЦА (ЛЕНДИНГ) -->
+<div id="landingPage">
+  <header class="landing-header">
+    <div class="container header-content">
+      <div class="logo">
+        <i class="fas fa-jar"></i>
+        <h1>БАНКа <span>ЖЕСТЬяная</span></h1>
+      </div>
+      <div class="landing-nav">
+        <a href="#about">О банке</a>
+        <a href="#rates">Курсы</a>
+        <a href="#trade">Торговля ЖЕСТЬЮ</a>
+        <a href="#contacts">Контакты</a>
+        <button class="btn btn-outline-light" id="landingLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-content">
+        <div>
+          <h2>Банк с железным<br>характером</h2>
+          <p class="hero-subtitle">Надёжность, проверенная временем. Ваши финансы под защитой жести.</p>
+          <button class="btn btn-accent btn-large" id="landingRegisterBtn"><i class="fas fa-user-plus"></i> Открыть счёт</button>
+        </div>
+        <div class="hero-stats">
+          <div><span>10+</span> лет на рынке</div>
+          <div><span>500k+</span> клиентов</div>
+          <div><span>🥫</span> ЖЕСТЬ стабильна</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="container section">
+      <div class="section-title"><i class="fas fa-industry"></i> Почему БАНКа ЖЕСТЬяная?</div>
+      <div class="grid-3col">
+        <div class="feature-card">
+          <i class="fas fa-shield-alt"></i>
+          <h3>Жестяная защита</h3>
+          <p>Все счета застрахованы по технологии «Жесть-Гарант». Ваши деньги как в банке — буквально.</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-bolt"></i>
+          <h3>Мгновенные переводы</h3>
+          <p>Переводы по России и миру за секунды. Даже в самую глухую деревню долетит жестяная банка.</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-chart-line"></i>
+          <h3>Собственная валюта ЖЕСТЬ</h3>
+          <p>Торгуйте ЖЕСТЬЮ на внутреннем рынке. Курс растёт вместе с ценой металла.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="rates" class="container section">
+      <div class="section-title"><i class="fas fa-coins"></i> Актуальные курсы</div>
+      <div class="rates-grid">
+        <div class="rate-card">
+          <span>🇺🇸 USD</span>
+          <span class="rate-value">92.45 ₽</span>
+        </div>
+        <div class="rate-card">
+          <span>🇪🇺 EUR</span>
+          <span class="rate-value">100.12 ₽</span>
+        </div>
+        <div class="rate-card highlight">
+          <span>🥫 ЖЕСТЬ (TIN)</span>
+          <span class="rate-value" id="landingTinRate">7.82 ₽</span>
+        </div>
+      </div>
+      <p class="rate-note"><i class="fas fa-sync-alt"></i> Курс ЖЕСТИ обновляется каждые 10 секунд</p>
+    </section>
+
+    <section id="trade" class="container section">
+      <div class="section-title"><i class="fas fa-exchange-alt"></i> Торгуйте ЖЕСТЬЮ</div>
+      <div class="trade-preview">
+        <p>Покупайте и продавайте ЖЕСТЬ прямо в личном кабинете. Курс выгодный, комиссия 0%.</p>
+        <button class="btn btn-outline" id="gotoTradeBtn" disabled><i class="fas fa-arrow-right"></i> Войдите для торговли</button>
+      </div>
+    </section>
+
+    <section id="contacts" class="container section">
+      <div class="section-title"><i class="fas fa-phone-alt"></i> Контакты</div>
+      <div class="contact-info">
+        <p><i class="fas fa-map-marker-alt"></i> г. Жестянск, ул. Консервная, д. 1</p>
+        <p><i class="fas fa-phone"></i> 8 (800) ЖЕСТЬ-00</p>
+        <p><i class="fas fa-envelope"></i> support@zhestbank.ru</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    <p>© 2026 БАНКа ЖЕСТЬяная. Лицензия ЦБ РФ №Ж-666. Все средства застрахованы жестью.</p>
+  </footer>
+</div>
+
+<!-- ИНТЕРФЕЙС ЛИЧНОГО КАБИНЕТА -->
+<div id="bankApp" style="display: none;">
+  <header class="header">
+    <div class="container header-content">
+      <div class="logo">
+        <i class="fas fa-jar"></i>
+        <h1>БАНКа <span>ЖЕСТЬяная</span></h1>
+      </div>
+      <div class="nav-links">
+        <a href="#" class="nav-item active" data-section="dashboard"><i class="fas fa-home"></i> Главная</a>
+        <a href="#" class="nav-item" data-section="accounts"><i class="fas fa-coins"></i> Счета</a>
+        <a href="#" class="nav-item" data-section="trade"><i class="fas fa-exchange-alt"></i> Торговля ЖЕСТЬЮ</a>
+        <a href="#" class="nav-item" data-section="history"><i class="fas fa-history"></i> История</a>
+        <a href="#" class="nav-item" data-section="cards"><i class="fas fa-credit-card"></i> Карты</a>
+        <a href="#" class="nav-item" data-section="loans"><i class="fas fa-percent"></i> Кредиты</a>
+        <a href="#" class="nav-item" data-section="support"><i class="fas fa-headset"></i> Поддержка</a>
+      </div>
+      <div class="user-badge">
+        <div class="balance-preview" id="totalBalancePreview">0 ₽</div>
+        <div class="user-menu">
+          <span id="userNameDisplay" class="user-name">Клиент</span>
+          <button id="profileBtn" class="btn-outline btn-small"><i class="fas fa-user-cog"></i></button>
+          <button id="logoutBtn" class="btn-outline btn-small"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container dashboard">
+    <!-- Dashboard -->
+    <section id="section-dashboard" class="section-content">
+      <div class="section-title"><i class="fas fa-chart-pie"></i> Обзор финансов</div>
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-wallet"></i> Мои счета</h3>
+            <span class="badge">жестяная защита</span>
+          </div>
+          <div id="accountsOverview"></div>
+          <div class="flex mt-4">
+            <button class="btn btn-outline btn-small" id="quickTopupBtn"><i class="fas fa-plus-circle"></i> Пополнить</button>
+            <button class="btn btn-small" id="quickTransferBtn"><i class="fas fa-paper-plane"></i> Перевести</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Курсы валют</h3>
+            <i class="fas fa-sync-alt" style="color: var(--primary);"></i>
+          </div>
+          <div id="exchangeRates">
+            <div class="currency-row"><span>🇺🇸 USD</span> <span class="rate-value">92.45 ₽</span></div>
+            <div class="currency-row"><span>🇪🇺 EUR</span> <span class="rate-value">100.12 ₽</span></div>
+            <div class="currency-row"><span>🥫 ЖЕСТЬ</span> <span class="rate-value" id="tinRateDisplay">7.82 ₽</span></div>
+          </div>
+          <p style="margin-top: 16px; font-size:0.9rem;"><i class="fas fa-info-circle"></i> Жестяной индекс: +0.2%</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+          <h3><i class="fas fa-history"></i> Последние операции</h3>
+          <a href="#" id="showAllHistory" style="text-decoration:none; color:var(--primary);">Все <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div id="recentTransactions"></div>
+      </div>
+    </section>
+
+    <!-- Счета -->
+    <section id="section-accounts" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-coins"></i> Управление счетами</div>
+      <div class="grid-2col">
+        <div class="card">
+          <h3>Ваши счета</h3>
+          <div id="accountsDetailList"></div>
+          <button class="btn btn-outline w-100 mt-4" id="addAccountBtn"><i class="fas fa-plus"></i> Открыть новый счёт</button>
+        </div>
+        <div class="card">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="depositTab">Пополнение</button>
+            <button class="tab-btn" data-tab="transferTab">Перевод</button>
+          </div>
+          <div id="depositTab" class="tab-content">
+            <div class="form-group">
+              <label>Счёт пополнения</label>
+              <select id="depositAccountSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label>Сумма (₽)</label>
+              <input type="number" id="depositAmount" class="form-control" placeholder="1000" min="1" value="5000">
+            </div>
+            <button class="btn btn-accent w-100" id="depositBtn"><i class="fas fa-arrow-down"></i> Пополнить</button>
+          </div>
+          <div id="transferTab" class="tab-content" style="display:none;">
+            <div class="form-group">
+              <label>Со счёта</label>
+              <select id="transferFromSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label>На счёт / телефон</label>
+              <input type="text" id="transferTarget" class="form-control" placeholder="Номер счёта или +7...">
+            </div>
+            <div class="form-group">
+              <label>Сумма</label>
+              <input type="number" id="transferAmount" class="form-control" placeholder="500" min="1" value="1200">
+            </div>
+            <button class="btn w-100" id="transferBtn"><i class="fas fa-paper-plane"></i> Перевести</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Торговля ЖЕСТЬЮ -->
+    <section id="section-trade" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-exchange-alt"></i> Торговля валютой ЖЕСТЬ</div>
+      <div class="grid-2col">
+        <div class="card">
+          <h3>Купить / Продать ЖЕСТЬ</h3>
+          <div class="trade-widget">
+            <div class="form-group">
+              <label>Тип операции</label>
+              <select id="tradeType" class="form-control">
+                <option value="buy">Купить ЖЕСТЬ за RUB</option>
+                <option value="sell">Продать ЖЕСТЬ за RUB</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Счёт списания / зачисления</label>
+              <select id="tradeAccountSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label>Количество ЖЕСТИ (🥫)</label>
+              <input type="number" id="tradeAmountTin" class="form-control" placeholder="10" min="1" value="10">
+            </div>
+            <div class="trade-info">
+              <p>Текущий курс: 1 🥫 = <span id="currentTinRate">7.82</span> ₽</p>
+              <p>Итого: <span id="tradeTotal">0</span> ₽</p>
+              <p>Ваш баланс ЖЕСТИ: <span id="tinBalanceDisplay">0 🥫</span></p>
+            </div>
+            <button class="btn btn-accent w-100" id="executeTradeBtn"><i class="fas fa-check"></i> Выполнить</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>График курса ЖЕСТИ</h3>
+          <div class="chart-container">
+            <div class="chart-header">
+              <span>🥫 ЖЕСТЬ / RUB</span>
+              <span class="chart-current" id="chartCurrentRate">7.82</span>
+            </div>
+            <canvas id="tinChart" width="400" height="200"></canvas>
+            <p class="chart-note">Динамика за последние 10 обновлений</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- История операций -->
+    <section id="section-history" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-history"></i> История операций</div>
+      <div class="card">
+        <div class="history-controls">
+          <div class="filter-group">
+            <label>Тип:</label>
+            <select id="historyFilterType" class="form-control" style="width:auto; display:inline-block;">
+              <option value="all">Все</option>
+              <option value="in">Доходы</option>
+              <option value="out">Расходы</option>
+            </select>
+          </div>
+          <div class="search-group">
+            <input type="text" id="historySearch" class="form-control" placeholder="Поиск по описанию..." style="width:250px;">
+          </div>
+        </div>
+        <div class="history-table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr><th>Дата</th><th>Описание</th><th>Счёт</th><th>Сумма</th></tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Карты -->
+    <section id="section-cards" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-credit-card"></i> Виртуальные карты</div>
+      <div class="grid-3col">
+        <div class="card">
+          <i class="fab fa-cc-visa" style="font-size:2.5rem; color:#1a1f71;"></i>
+          <h3>Жестяная Black</h3>
+          <p>**** 4215 · Баланс: <span id="cardBalance1">0 ₽</span></p>
+          <button class="btn-outline btn-small mt-4" disabled><i class="fas fa-lock"></i> Заказать пластик</button>
+        </div>
+        <div class="card">
+          <i class="fab fa-cc-mastercard" style="font-size:2.5rem; color:#eb001b;"></i>
+          <h3>Жестяная Gold</h3>
+          <p>**** 8732 · Баланс: <span id="cardBalance2">0 ₽</span></p>
+          <button class="btn-outline btn-small mt-4"><i class="fas fa-sync"></i> Пополнить</button>
+        </div>
+        <div class="card">
+          <i class="fas fa-jar" style="font-size:2.5rem; color:var(--primary);"></i>
+          <h3>Цифровая Жесть</h3>
+          <p>Мгновенные переводы</p>
+          <button class="btn btn-small mt-4" id="issueVirtualCardBtn"><i class="fas fa-plus"></i> Выпустить</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Кредиты -->
+    <section id="section-loans" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-percent"></i> Кредиты & Рассрочка</div>
+      <div class="grid-2col">
+        <div class="card">
+          <h3>Кредитный калькулятор</h3>
+          <div style="background: var(--bg-light); padding: 20px; border-radius: 18px;">
+            <label>Сумма кредита: <span id="loanAmountLabel">300 000 ₽</span></label>
+            <input type="range" min="50000" max="2000000" step="10000" value="300000" class="w-100" id="loanSlider">
+            <label>Срок (мес): <span id="loanTermLabel">12 мес.</span></label>
+            <input type="range" min="6" max="60" value="12" class="w-100" id="loanTermSlider">
+            <div class="calculator-result" id="loanCalcResult" style="margin-top:20px; padding:16px; background:white; border-radius:16px; font-weight:700;">
+              Ежемесячный платёж: ≈ 26 800 ₽
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3><i class="fas fa-check-circle" style="color:var(--accent-green);"></i> Спецпредложения</h3>
+          <ul style="list-style:none;">
+            <li style="padding:12px 0;">🏦 «Жестяная ипотека» от 4.5%</li>
+            <li style="padding:12px 0;">🚗 Автокредит на любую консервную банку</li>
+            <li style="padding:12px 0;">💳 Кредитная карта «Жесть» — 120 дней без %</li>
+          </ul>
+          <button class="btn btn-accent w-100 mt-4" id="applyLoanBtn"><i class="fas fa-file-signature"></i> Оставить заявку</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Поддержка -->
+    <section id="section-support" class="section-content" style="display:none;">
+      <div class="section-title"><i class="fas fa-headset"></i> Служба заботы</div>
+      <div class="card" style="max-width:600px; margin:0 auto;">
+        <h3>Напишите нам</h3>
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Ваше имя" id="supportName" value="Клиент Жестяной">
+        </div>
+        <div class="form-group">
+          <textarea class="form-control" rows="4" placeholder="Сообщение..." id="supportMsg"></textarea>
+        </div>
+        <button class="btn w-100" id="sendSupportMsg"><i class="fas fa-paper-plane"></i> Отправить</button>
+        <p style="margin-top:20px;"><i class="fas fa-phone-alt"></i> 8 (800) ЖЕСТЬ-00</p>
+      </div>
+    </section>
+  </main>
+  <footer class="footer container">
+    <p>© 2026 БАНКа ЖЕСТЬяная. Лицензия ЦБ РФ №Ж-666.</p>
+  </footer>
+</div>
+
+<!-- Модальное окно входа/регистрации -->
+<div class="modal" id="authModal">
+  <div class="modal-card">
+    <i class="fas fa-times close-icon" id="closeAuthModal"></i>
+    <div class="logo" style="justify-content: center; margin-bottom: 20px;">
+      <i class="fas fa-jar"></i>
+      <h2>БАНКа ЖЕСТЬяная</h2>
+    </div>
+    <div class="tabs" style="justify-content: center;">
+      <button class="tab-btn active" id="modalTabLogin">Вход</button>
+      <button class="tab-btn" id="modalTabRegister">Регистрация</button>
+    </div>
+    <form id="modalLoginForm" class="auth-form">
+      <div class="form-group">
+        <label>Логин</label>
+        <input type="text" id="modalLoginUsername" class="form-control" placeholder="Ваш логин" required>
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="modalLoginPassword" class="form-control" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-accent w-100"><i class="fas fa-sign-in-alt"></i> Войти</button>
+      <p id="modalLoginError" class="error-message"></p>
+    </form>
+    <form id="modalRegisterForm" class="auth-form" style="display: none;">
+      <div class="form-group">
+        <label>Имя</label>
+        <input type="text" id="modalRegName" class="form-control" placeholder="Иван Жестяной" required>
+      </div>
+      <div class="form-group">
+        <label>Логин</label>
+        <input type="text" id="modalRegUsername" class="form-control" placeholder="Придумайте логин" required>
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="modalRegPassword" class="form-control" placeholder="Минимум 4 символа" required>
+      </div>
+      <div class="form-group">
+        <label>Подтверждение</label>
+        <input type="password" id="modalRegConfirm" class="form-control" placeholder="Повторите пароль" required>
+      </div>
+      <button type="submit" class="btn w-100"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+      <p id="modalRegError" class="error-message"></p>
+    </form>
+    <p class="auth-footer">Демо-режим. Данные хранятся в браузере.</p>
+  </div>
+</div>
+
+<!-- Модальное окно профиля -->
+<div class="modal" id="profileModal">
+  <div class="modal-card">
+    <i class="fas fa-times close-icon" id="closeProfileModal"></i>
+    <h2>Настройки профиля</h2>
+    <form id="profileForm">
+      <div class="form-group">
+        <label>Отображаемое имя</label>
+        <input type="text" id="profileName" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label>Новый пароль (оставьте пустым, чтобы не менять)</label>
+        <input type="password" id="profileNewPassword" class="form-control" placeholder="Минимум 4 символа">
+      </div>
+      <div class="form-group">
+        <label>Подтвердите новый пароль</label>
+        <input type="password" id="profileConfirmPassword" class="form-control" placeholder="Повторите пароль">
+      </div>
+      <div class="form-group">
+        <label>Текущий пароль (для подтверждения)</label>
+        <input type="password" id="profileCurrentPassword" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-accent w-100"><i class="fas fa-save"></i> Сохранить</button>
+      <p id="profileError" class="error-message"></p>
+    </form>
+  </div>
+</div>
+
+<!-- Информационное модальное окно -->
+<div class="modal" id="infoModal">
+  <div class="modal-card">
+    <i class="fas fa-times close-icon" id="closeInfoModal"></i>
+    <div id="modalContent">Уведомление</div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
