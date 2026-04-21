@@ -222,49 +222,12 @@ body {
 .trade-widget { background: var(--bg-light); padding: 24px; border-radius: 20px; }
 .trade-info { margin: 20px 0; padding: 18px; background: white; border-radius: 16px; border: 1px solid var(--border-light); }
 .trade-info p { margin: 8px 0; }
-
-/* Новый стиль графика */
-.chart-container {
-  background: var(--bg-light);
-  border-radius: 16px;
-  padding: 15px;
-}
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: var(--primary-dark);
-}
-.chart-current {
-  background: var(--primary);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 1.1rem;
-}
-.chart-placeholder {
-  background: white;
-  padding: 20px;
-  border-radius: 20px;
-  text-align: center;
-  border: 1px solid var(--border-light);
-}
-
-canvas {
-  width: 100%;
-  height: auto;
-  background: #fdfdfd;
-  border-radius: 12px;
-  display: block;
-}
-
-.chart-note {
-  margin-top: 12px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
+.chart-placeholder { background: white; padding: 20px; border-radius: 20px; text-align: center; border: 1px solid var(--border-light); }
+canvas { width: 100%; height: auto; background: #fdfdfd; border-radius: 12px; }
+.chart-note { margin-top: 12px; color: var(--text-muted); font-size: 0.9rem; }
+.flex { display: flex; gap: 15px; }
+.mt-4 { margin-top: 24px; }
+.w-100 { width: 100%; }
 
 /* История */
 .history-controls { display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
@@ -301,10 +264,6 @@ canvas {
 .close-icon:hover { color: var(--primary); }
 .error-message { color: #c0392b; font-size: 0.9rem; margin-top: 12px; text-align: center; }
 .auth-footer { margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
-
-.flex { display: flex; gap: 15px; }
-.mt-4 { margin-top: 24px; }
-.w-100 { width: 100%; }
 
 @media (max-width: 900px) {
   .grid-2col, .grid-3col { grid-template-columns: 1fr; }
