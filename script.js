@@ -35,7 +35,14 @@
   };
   const navItems = document.querySelectorAll('.nav-item');
 
-  // Функции форматирования
+  // Генерация уникального номера счёта
+  function generateAccountNumber() {
+    const prefix = '40817';
+    const randomPart = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
+    return prefix + randomPart;
+  }
+
+  // Функции
   function formatMoney(amount) { return new Intl.NumberFormat('ru-RU').format(amount) + ' ₽'; }
   
   function saveUserData() {
@@ -54,7 +61,8 @@
       transactions = user.transactions || [];
       if (accounts.length === 0) {
         accounts = [
-          { id: 'acc1', name: 'Основной жестяной', balance: 0, currency: 'RUB', number: '40817810512345678901' },
+          { id: 'acc1', name: 'Основной жестяной', balance: 0, currency: 'RUB', number: generateAccountNumber() },
+          { id: 'acc2', name: 'Накопительный', balance: 0, currency: 'RUB', number: generateAccountNumber() },
           { id: 'tin1', name: 'Жестяной кошелёк', balance: 0, currency: 'TIN', number: 'TIN-0001' }
         ];
         transactions = [];
@@ -106,12 +114,12 @@
   }
 
   function populateSelects() {
-    const deposit = document.getElementById('depositAccountSelect');
-    const transfer = document.getElementById('transferFromSelect');
+    const transferFrom = document.getElementById('transferFromSelect');
+    const transferTo = document.getElementById('transferToSelect');
     const tradeSelect = document.getElementById('tradeAccountSelect');
     const rubAccs = accounts.filter(a=>a.currency==='RUB');
-    if (deposit) deposit.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
-    if (transfer) transfer.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    if (transferFrom) transferFrom.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
+    if (transferTo) transferTo.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
     if (tradeSelect) tradeSelect.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
   }
 
@@ -141,112 +149,67 @@
     }).join('');
   }
 
-  // Улучшенный график ЖЕСТИ
-  function drawChart() {
-    const canvas = document.getElementById('tinChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const w = 300, h = 150;
-    const padding = { left: 35, right: 15, top: 15, bottom: 25 };
-    const chartW = w - padding.left - padding.right;
-    const chartH = h - padding.top - padding.bottom;
-
-    ctx.clearRect(0, 0, w, h);
-    
-    // Фон
-    ctx.fillStyle = '#faf9fc';
-    ctx.fillRect(0, 0, w, h);
-    
-    // Сетка и подписи
-    const max = Math.max(...rateHistory) * 1.02;
-    const min = Math.min(...rateHistory) * 0.98;
-    const range = max - min;
-    
-    ctx.beginPath();
-    ctx.strokeStyle = '#e2dce8';
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= 4; i++) {
-      const y = padding.top + (i/4) * chartH;
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(w - padding.right, y);
-      
-      // Подписи оси Y
-      const val = max - (i/4) * range;
-      ctx.fillStyle = '#5a4e63';
-      ctx.font = '9px Inter, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(val.toFixed(2), padding.left - 5, y + 3);
-    }
-    ctx.stroke();
-    
-    // Ось X
-    ctx.beginPath();
-    ctx.strokeStyle = '#b0a6b8';
-    ctx.lineWidth = 1;
-    ctx.moveTo(padding.left, h - padding.bottom);
-    ctx.lineTo(w - padding.right, h - padding.bottom);
-    ctx.stroke();
-    
-    // Подписи оси X (последние 5 меток)
-    ctx.fillStyle = '#5a4e63';
-    ctx.font = '8px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    const step = chartW / (rateHistory.length - 1);
-    [0, Math.floor(rateHistory.length/2), rateHistory.length-1].forEach(idx => {
-      const x = padding.left + idx * step;
-      ctx.fillText(rateHistory.length - idx + 'д', x, h - 8);
-    });
-
-    // Заливка области под графиком
-    ctx.beginPath();
-    rateHistory.forEach((v, i) => {
-      const x = padding.left + i * step;
-      const y = padding.top + chartH - ((v - min) / range) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    const lastX = padding.left + (rateHistory.length-1) * step;
-    ctx.lineTo(lastX, h - padding.bottom);
-    ctx.lineTo(padding.left, h - padding.bottom);
-    ctx.closePath();
-    ctx.fillStyle = '#A7CF3480';
-    ctx.fill();
-    
-    // Линия графика
-    ctx.beginPath();
-    rateHistory.forEach((v, i) => {
-      const x = padding.left + i * step;
-      const y = padding.top + chartH - ((v - min) / range) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#4D6800';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-    
-    // Точки
-    rateHistory.forEach((v, i) => {
-      const x = padding.left + i * step;
-      const y = padding.top + chartH - ((v - min) / range) * chartH;
-      ctx.beginPath();
-      ctx.arc(x, y, 2.5, 0, 2*Math.PI);
-      ctx.fillStyle = '#5C026F';
-      ctx.shadowColor = '#9F31B7';
-      ctx.shadowBlur = 4;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    });
-  }
-
   function updateTinRate() {
     tinRate = 7.5 + Math.random() * 1.5;
     document.querySelectorAll('#tinRateDisplay, #landingTinRate, #currentTinRate').forEach(el => { if(el) el.textContent = tinRate.toFixed(2) + ' ₽'; });
-    rateHistory.push(tinRate);
-    if(rateHistory.length > 15) rateHistory.shift(); // больше истории для графика
+    rateHistory.push(tinRate); if(rateHistory.length>10) rateHistory.shift();
     drawChart();
     calculateTradeTotal();
   }
   setInterval(updateTinRate, 10000);
+
+  function drawChart() {
+    const canvas = document.getElementById('tinChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w=300, h=150;
+    ctx.clearRect(0,0,w,h);
+    
+    // Градиент под графиком
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, 'rgba(119, 159, 0, 0.3)');
+    gradient.addColorStop(1, 'rgba(119, 159, 0, 0)');
+    
+    ctx.beginPath();
+    const step = w/(rateHistory.length-1);
+    const max = Math.max(...rateHistory), min = Math.min(...rateHistory);
+    
+    // Рисуем область под графиком
+    rateHistory.forEach((v,i) => {
+      const x = i*step;
+      const y = h - ((v-min)/(max-min))*h*0.8 - 10;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Рисуем линию
+    ctx.beginPath();
+    rateHistory.forEach((v,i) => {
+      const x = i*step;
+      const y = h - ((v-min)/(max-min))*h*0.8 - 10;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = '#779F00';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Точки на графике
+    rateHistory.forEach((v,i) => {
+      const x = i*step;
+      const y = h - ((v-min)/(max-min))*h*0.8 - 10;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, 2*Math.PI);
+      ctx.fillStyle = '#5C026F';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
 
   function calculateTradeTotal() {
     const amount = parseFloat(document.getElementById('tradeAmountTin')?.value) || 0;
@@ -264,7 +227,6 @@
       const tinAcc = accounts.find(a=>a.currency==='TIN');
       document.getElementById('tinBalanceDisplay').textContent = (tinAcc?.balance || 0) + ' 🥫';
       calculateTradeTotal();
-      drawChart(); // перерисовка при показе
     }
     if (sectionId === 'history') renderHistory();
   }
@@ -280,7 +242,6 @@
     if(accounts[0]) document.getElementById('cardBalance1').textContent = formatMoney(accounts[0].balance);
     if(accounts[1]) document.getElementById('cardBalance2').textContent = formatMoney(accounts[1]?.balance || 0);
     calculateTradeTotal();
-    drawChart();
     if (sections.history.style.display === 'block') renderHistory();
   }
 
@@ -339,7 +300,8 @@
       const newUser = {
         name, username: u, password: p,
         accounts: [
-          { id:'acc1', name:'Основной жестяной', balance:0, currency:'RUB', number:'40817810512345678901' },
+          { id:'acc1', name:'Основной жестяной', balance:0, currency:'RUB', number: generateAccountNumber() },
+          { id:'acc2', name:'Накопительный', balance:0, currency:'RUB', number: generateAccountNumber() },
           { id:'tin1', name:'Жестяной кошелёк', balance:0, currency:'TIN', number:'TIN-0001' }
         ],
         transactions: []
@@ -413,52 +375,29 @@
     // Навигация
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
-    // Пополнение счёта (имитация внешнего поступления)
-    document.getElementById('depositBtn')?.addEventListener('click', () => {
-      const accId = document.getElementById('depositAccountSelect').value;
-      const amount = parseFloat(document.getElementById('depositAmount').value);
-      if (isNaN(amount) || amount <= 0) return showInfoModal('Введите сумму', false);
-      const acc = accounts.find(a => a.id === accId);
-      if (acc) {
-        acc.balance += amount;
-        addTransaction('in', 'Пополнение с карты/счета', amount, accId);
-        saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`);
-      }
-    });
-
-    // Перевод между счетами (внутренний или внешний)
+    // Перевод между своими счетами
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
-      const target = document.getElementById('transferTarget').value.trim();
+      const toId = document.getElementById('transferToSelect').value;
       const amount = parseFloat(document.getElementById('transferAmount').value);
-      if (!target) return showInfoModal('Укажите получателя', false);
-      if (isNaN(amount) || amount <= 0) return showInfoModal('Некорректная сумма', false);
+      
+      if (fromId === toId) return showInfoModal('Выберите разные счета', false);
+      if (isNaN(amount) || amount <= 0) return showInfoModal('Введите корректную сумму', false);
+      
       const fromAcc = accounts.find(a => a.id === fromId);
-      if (!fromAcc) return;
-      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
+      const toAcc = accounts.find(a => a.id === toId);
       
-      // Ищем счёт получателя по номеру или названию среди ВСЕХ пользователей (имитация межбанковского перевода)
-      let toAcc = null;
-      let external = true;
+      if (!fromAcc || !toAcc) return;
+      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств на счёте списания', false);
       
-      // Сначала ищем среди своих счетов
-      toAcc = accounts.find(a => a.number === target || a.name === target);
-      if (toAcc && toAcc.id !== fromId) external = false;
+      fromAcc.balance -= amount;
+      toAcc.balance += amount;
       
-      if (!external) {
-        // Внутренний перевод между своими счетами
-        fromAcc.balance -= amount;
-        toAcc.balance += amount;
-        addTransaction('out', `Перевод на ${toAcc.name}`, amount, fromId);
-        addTransaction('in', `Перевод с ${fromAcc.name}`, amount, toAcc.id);
-        showInfoModal(`Переведено ${formatMoney(amount)} на счёт ${toAcc.name}`, true);
-      } else {
-        // Внешний перевод (деньги уходят из системы)
-        fromAcc.balance -= amount;
-        addTransaction('out', `Перевод: ${target}`, amount, fromId);
-        showInfoModal(`Переведено ${formatMoney(amount)} получателю ${target}`, true);
-      }
+      addTransaction('out', `Перевод на счёт ${toAcc.name}`, amount, fromId);
+      addTransaction('in', `Поступление со счёта ${fromAcc.name}`, amount, toId);
+      
       saveUserData(); updateUI();
+      showInfoModal(`Переведено ${formatMoney(amount)} со счёта "${fromAcc.name}" на счёт "${toAcc.name}"`, true);
     });
 
     // Фильтры истории
@@ -466,27 +405,13 @@
     document.getElementById('historySearch')?.addEventListener('input', renderHistory);
 
     // Быстрые кнопки
-    document.getElementById('quickTopupBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('quickTransferBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('showAllHistory')?.addEventListener('click', (e)=>{ e.preventDefault(); switchSection('history'); });
 
-    // Табы
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (btn.closest('.tabs')) {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          document.getElementById('depositTab').style.display = btn.dataset.tab === 'depositTab' ? 'block' : 'none';
-          document.getElementById('transferTab').style.display = btn.dataset.tab === 'transferTab' ? 'block' : 'none';
-        }
-      });
-    });
-
     // Заглушки
     document.getElementById('addAccountBtn')?.addEventListener('click', ()=> {
-      const newAccNumber = '40817' + Math.floor(Math.random()*1000000000).toString().padStart(9,'0');
-      const newAcc = { id:'acc'+Date.now(), name:'Новый жестяной', balance:0, currency:'RUB', number: newAccNumber };
-      accounts.push(newAcc); saveUserData(); updateUI(); showInfoModal(`Счёт открыт. Номер: ${newAccNumber}`);
+      const newAcc = { id:'acc'+Date.now(), name:'Новый рублёвый', balance:0, currency:'RUB', number: generateAccountNumber() };
+      accounts.push(newAcc); saveUserData(); updateUI(); showInfoModal(`Счёт открыт. Номер: ${newAcc.number}`);
     });
     document.getElementById('issueVirtualCardBtn')?.addEventListener('click', ()=> showInfoModal('Виртуальная карта выпущена'));
     document.getElementById('applyLoanBtn')?.addEventListener('click', ()=> showInfoModal('Заявка отправлена. Одобрение 99%'));
@@ -514,7 +439,6 @@
 
     if (currentUser) showBank(); else showLanding();
     updateTinRate();
-    drawChart();
   }
 
   init();
