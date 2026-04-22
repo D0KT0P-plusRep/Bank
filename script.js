@@ -1,14 +1,22 @@
 (function(){
   "use strict";
 
-  // ---------- ХРАНЕНИЕ ----------
+  // ---------- КОНФИГУРАЦИЯ ----------
+  const EXCHANGE_API_KEY = 'YOUR_API_KEY'; // замените на свой ключ с exchangerate-api.com
+  const BASE_CURRENCY = 'RUB';
+  
+  // ---------- ГЛОБАЛЬНОЕ ХРАНИЛИЩЕ ----------
   let users = JSON.parse(localStorage.getItem('bankUsers')) || [];
   let currentUser = JSON.parse(localStorage.getItem('bankCurrentUser')) || null;
   let tinRate = 7.82;
   const rateHistory = [7.82, 7.85, 7.79, 7.90, 7.88, 7.95, 7.92, 7.89, 7.86, 7.82];
-
+  
+  // Данные текущего пользователя
   let accounts = [];
   let transactions = [];
+
+  // Кэш курсов валют
+  let exchangeRates = {};
 
   // DOM элементы
   const landingPage = document.getElementById('landingPage');
@@ -35,21 +43,43 @@
   };
   const navItems = document.querySelectorAll('.nav-item');
 
-  // Генерация уникального номера счёта
+  // Вспомогательные функции
+  function formatMoney(amount) { return new Intl.NumberFormat('ru-RU').format(amount) + ' ₽'; }
+  
+  // Генерация уникального номера счёта (20 цифр, начинается с 40817)
   function generateAccountNumber() {
     const prefix = '40817';
-    const randomPart = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
+    const randomPart = Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
     return prefix + randomPart;
   }
 
-  // Функции
-  function formatMoney(amount) { return new Intl.NumberFormat('ru-RU').format(amount) + ' ₽'; }
-  
+  // Сохранение всех пользователей
+  function saveAllUsers() {
+    localStorage.setItem('bankUsers', JSON.stringify(users));
+  }
+
+  // Построение индекса счетов: номер -> { userId, account }
+  function buildAccountIndex() {
+    const index = {};
+    users.forEach(user => {
+      user.accounts.forEach(acc => {
+        index[acc.number] = { userId: user.username, account: acc };
+      });
+    });
+    return index;
+  }
+
+  // Поиск счета получателя по номеру
+  function findAccountByNumber(number) {
+    const index = buildAccountIndex();
+    return index[number];
+  }
+
   function saveUserData() {
     if (!currentUser) return;
     const idx = users.findIndex(u => u.username === currentUser.username);
     if (idx !== -1) { users[idx].accounts = accounts; users[idx].transactions = transactions; }
-    localStorage.setItem('bankUsers', JSON.stringify(users));
+    saveAllUsers();
     localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
   }
 
@@ -62,15 +92,48 @@
       if (accounts.length === 0) {
         accounts = [
           { id: 'acc1', name: 'Основной жестяной', balance: 0, currency: 'RUB', number: generateAccountNumber() },
-          { id: 'acc2', name: 'Накопительный', balance: 0, currency: 'RUB', number: generateAccountNumber() },
           { id: 'tin1', name: 'Жестяной кошелёк', balance: 0, currency: 'TIN', number: 'TIN-0001' }
         ];
         transactions = [];
+        saveUserData();
       }
     }
     userNameDisplay.textContent = currentUser?.name || 'Клиент';
   }
 
+  // Загрузка курсов валют с API
+  async function fetchExchangeRates() {
+    try {
+      const response = await fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/latest/${BASE_CURRENCY}`);
+      const data = await response.json();
+      if (data.result === 'success') {
+        exchangeRates = data.conversion_rates;
+        renderExchangeRates();
+      }
+    } catch (error) {
+      console.warn('Не удалось загрузить курсы валют, используются заглушки');
+      exchangeRates = { USD: 92.5, EUR: 100.2, CNY: 12.8, GBP: 115.3 };
+      renderExchangeRates();
+    }
+  }
+
+  function renderExchangeRates() {
+    const landingContainer = document.getElementById('landingRatesContainer');
+    const dashContainer = document.getElementById('dashboardRatesContainer');
+    const rates = Object.entries(exchangeRates).filter(([code]) => code !== BASE_CURRENCY).slice(0, 5);
+    
+    const html = rates.map(([code, rate]) => `
+      <div class="rate-item">
+        <span class="rate-currency">${code}</span>
+        <span class="rate-value">${rate.toFixed(2)} ₽</span>
+      </div>
+    `).join('');
+    
+    if (landingContainer) landingContainer.innerHTML = html || 'Курсы недоступны';
+    if (dashContainer) dashContainer.innerHTML = html || 'Курсы недоступны';
+  }
+
+  // Остальные функции рендера (как раньше) с небольшими изменениями
   function updateTotalBalance() {
     const total = accounts.filter(a=>a.currency==='RUB').reduce((s,a)=>s+a.balance,0);
     totalBalanceSpan.textContent = formatMoney(total);
@@ -106,7 +169,7 @@
     if (!list) return;
     list.innerHTML = accounts.map(acc => `
       <div class="account-item">
-        <div><i class="fas fa-${acc.currency==='TIN'?'jar':'wallet'}"></i> ${acc.name}<br><small style="color:#6c7a89;">${acc.number}</small></div>
+        <div><i class="fas fa-${acc.currency==='TIN'?'jar':'wallet'}"></i> ${acc.name}<br><small>${acc.number}</small></div>
         <div class="account-balance">${acc.currency==='TIN'? acc.balance+' 🥫' : formatMoney(acc.balance)}</div>
       </div>
     `).join('');
@@ -114,18 +177,17 @@
   }
 
   function populateSelects() {
-    const transferFrom = document.getElementById('transferFromSelect');
-    const transferTo = document.getElementById('transferToSelect');
+    const deposit = document.getElementById('depositAccountSelect');
+    const transfer = document.getElementById('transferFromSelect');
     const tradeSelect = document.getElementById('tradeAccountSelect');
     const rubAccs = accounts.filter(a=>a.currency==='RUB');
-    if (transferFrom) transferFrom.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
-    if (transferTo) transferTo.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
+    if (deposit) deposit.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
+    if (transfer) transfer.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
     if (tradeSelect) tradeSelect.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
   }
 
   function addTransaction(type, desc, amount, accountId) {
     transactions.push({ id:Date.now(), type, desc, amount, date:new Date().toISOString().slice(0,10), account:accountId });
-    saveUserData();
   }
 
   function showInfoModal(msg, success=true) {
@@ -151,7 +213,7 @@
 
   function updateTinRate() {
     tinRate = 7.5 + Math.random() * 1.5;
-    document.querySelectorAll('#tinRateDisplay, #landingTinRate, #currentTinRate').forEach(el => { if(el) el.textContent = tinRate.toFixed(2) + ' ₽'; });
+    document.querySelectorAll('#currentTinRate').forEach(el => el.textContent = tinRate.toFixed(2) + ' ₽');
     rateHistory.push(tinRate); if(rateHistory.length>10) rateHistory.shift();
     drawChart();
     calculateTradeTotal();
@@ -164,51 +226,15 @@
     const ctx = canvas.getContext('2d');
     const w=300, h=150;
     ctx.clearRect(0,0,w,h);
-    
-    // Градиент под графиком
-    const gradient = ctx.createLinearGradient(0, 0, 0, h);
-    gradient.addColorStop(0, 'rgba(119, 159, 0, 0.3)');
-    gradient.addColorStop(1, 'rgba(119, 159, 0, 0)');
-    
     ctx.beginPath();
     const step = w/(rateHistory.length-1);
     const max = Math.max(...rateHistory), min = Math.min(...rateHistory);
-    
-    // Рисуем область под графиком
     rateHistory.forEach((v,i) => {
       const x = i*step;
       const y = h - ((v-min)/(max-min))*h*0.8 - 10;
       if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
     });
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    
-    // Рисуем линию
-    ctx.beginPath();
-    rateHistory.forEach((v,i) => {
-      const x = i*step;
-      const y = h - ((v-min)/(max-min))*h*0.8 - 10;
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.strokeStyle = '#779F00';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Точки на графике
-    rateHistory.forEach((v,i) => {
-      const x = i*step;
-      const y = h - ((v-min)/(max-min))*h*0.8 - 10;
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, 2*Math.PI);
-      ctx.fillStyle = '#5C026F';
-      ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
+    ctx.strokeStyle = '#779F00'; ctx.lineWidth=2.5; ctx.stroke();
   }
 
   function calculateTradeTotal() {
@@ -261,8 +287,12 @@
     localStorage.removeItem('bankCurrentUser');
   }
 
-  // Инициализация событий
+  // ---------- ИНИЦИАЛИЗАЦИЯ ----------
   function init() {
+    // Загружаем курсы
+    if (EXCHANGE_API_KEY !== 'YOUR_API_KEY') fetchExchangeRates();
+    else renderExchangeRates(); // заглушки
+
     landingLoginBtn.onclick = () => authModal.style.display = 'flex';
     landingRegisterBtn.onclick = () => { authModal.style.display = 'flex'; document.getElementById('modalTabRegister').click(); };
     logoutBtn.onclick = showLanding;
@@ -297,24 +327,26 @@
       if (p !== c) return document.getElementById('modalRegError').textContent = 'Пароли не совпадают';
       if (p.length<4) return document.getElementById('modalRegError').textContent = 'Минимум 4 символа';
       if (users.find(x=>x.username===u)) return document.getElementById('modalRegError').textContent = 'Логин занят';
+      
+      // Генерируем уникальный номер счета
+      const accountNumber = generateAccountNumber();
       const newUser = {
         name, username: u, password: p,
         accounts: [
-          { id:'acc1', name:'Основной жестяной', balance:0, currency:'RUB', number: generateAccountNumber() },
-          { id:'acc2', name:'Накопительный', balance:0, currency:'RUB', number: generateAccountNumber() },
-          { id:'tin1', name:'Жестяной кошелёк', balance:0, currency:'TIN', number:'TIN-0001' }
+          { id: 'acc1', name: 'Основной жестяной', balance: 0, currency: 'RUB', number: accountNumber },
+          { id: 'tin1', name: 'Жестяной кошелёк', balance: 0, currency: 'TIN', number: 'TIN-' + Date.now().toString().slice(-6) }
         ],
         transactions: []
       };
       users.push(newUser);
-      localStorage.setItem('bankUsers', JSON.stringify(users));
+      saveAllUsers();
       currentUser = { username: u, name };
       localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
       authModal.style.display = 'none';
       showBank();
     };
 
-    // Профиль
+    // Профиль (без изменений)
     profileBtn.onclick = () => {
       if (!currentUser) return;
       const user = users.find(u => u.username === currentUser.username);
@@ -339,7 +371,7 @@
         user.password = newPass;
       }
       user.name = newName;
-      localStorage.setItem('bankUsers', JSON.stringify(users));
+      saveAllUsers();
       currentUser.name = newName;
       localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
       userNameDisplay.textContent = newName;
@@ -347,7 +379,7 @@
       showInfoModal('Профиль обновлён');
     };
 
-    // Торговля
+    // Торговля ЖЕСТЬЮ (как раньше)
     document.getElementById('tradeAmountTin').addEventListener('input', calculateTradeTotal);
     document.getElementById('executeTradeBtn').addEventListener('click', () => {
       const type = document.getElementById('tradeType').value;
@@ -375,46 +407,106 @@
     // Навигация
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
-    // Перевод между своими счетами
+    // Демо-пополнение (из воздуха)
+    document.getElementById('demoDepositBtn')?.addEventListener('click', () => {
+      const acc = accounts.find(a => a.currency === 'RUB');
+      if (acc) {
+        acc.balance += 1000;
+        addTransaction('in', 'Демо-пополнение (внесение наличных)', 1000, acc.id);
+        saveUserData(); updateUI(); showInfoModal('Счёт пополнен на 1000 ₽ (демо)', true);
+      }
+    });
+
+    // Пополнение (имитация внешней карты)
+    document.getElementById('depositBtn')?.addEventListener('click', () => {
+      const accId = document.getElementById('depositAccountSelect').value;
+      const amount = parseFloat(document.getElementById('depositAmount').value);
+      if (isNaN(amount) || amount <= 0) return showInfoModal('Введите сумму', false);
+      const acc = accounts.find(a => a.id === accId);
+      if (acc) { acc.balance += amount; addTransaction('in', 'Пополнение с внешней карты', amount, accId); saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); }
+    });
+
+    // Перевод (включая другим клиентам)
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
-      const toId = document.getElementById('transferToSelect').value;
+      const targetNumber = document.getElementById('transferTarget').value.trim();
       const amount = parseFloat(document.getElementById('transferAmount').value);
-      
-      if (fromId === toId) return showInfoModal('Выберите разные счета', false);
-      if (isNaN(amount) || amount <= 0) return showInfoModal('Введите корректную сумму', false);
-      
+      if (!targetNumber) return showInfoModal('Укажите номер счёта получателя', false);
+      if (isNaN(amount) || amount <= 0) return showInfoModal('Некорректная сумма', false);
       const fromAcc = accounts.find(a => a.id === fromId);
-      const toAcc = accounts.find(a => a.id === toId);
+      if (!fromAcc) return;
+      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
+
+      // Ищем получателя среди всех пользователей
+      const recipient = findAccountByNumber(targetNumber);
+      if (!recipient) return showInfoModal('Счёт получателя не найден', false);
       
-      if (!fromAcc || !toAcc) return;
-      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств на счёте списания', false);
-      
+      // Нельзя переводить самому себе на тот же счёт
+      if (recipient.account.id === fromAcc.id && recipient.userId === currentUser.username) {
+        return showInfoModal('Нельзя перевести на тот же счёт', false);
+      }
+
+      // Выполняем перевод
       fromAcc.balance -= amount;
-      toAcc.balance += amount;
+      recipient.account.balance += amount;
       
-      addTransaction('out', `Перевод на счёт ${toAcc.name}`, amount, fromId);
-      addTransaction('in', `Поступление со счёта ${fromAcc.name}`, amount, toId);
+      // Добавляем транзакции обоим
+      addTransaction('out', `Перевод клиенту ${recipient.userId} (${targetNumber})`, amount, fromAcc.id);
       
-      saveUserData(); updateUI();
-      showInfoModal(`Переведено ${formatMoney(amount)} со счёта "${fromAcc.name}" на счёт "${toAcc.name}"`, true);
+      // Находим пользователя-получателя и добавляем ему транзакцию
+      const recipientUser = users.find(u => u.username === recipient.userId);
+      if (recipientUser) {
+        const recipientAcc = recipientUser.accounts.find(a => a.id === recipient.account.id);
+        if (recipientAcc) {
+          recipientUser.transactions.push({
+            id: Date.now() + 1,
+            type: 'in',
+            desc: `Перевод от ${currentUser.name} (${fromAcc.number})`,
+            amount: amount,
+            date: new Date().toISOString().slice(0,10),
+            account: recipient.account.id
+          });
+        }
+      }
+      
+      saveAllUsers(); // сохраняем обоих пользователей
+      // Обновляем данные текущего пользователя из хранилища
+      const updatedUser = users.find(u => u.username === currentUser.username);
+      if (updatedUser) {
+        accounts = updatedUser.accounts;
+        transactions = updatedUser.transactions;
+      }
+      updateUI();
+      showInfoModal(`Переведено ${formatMoney(amount)} на счёт ${targetNumber}`, true);
     });
 
     // Фильтры истории
     document.getElementById('historyFilterType')?.addEventListener('change', renderHistory);
     document.getElementById('historySearch')?.addEventListener('input', renderHistory);
 
-    // Быстрые кнопки
+    document.getElementById('quickTopupBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('quickTransferBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('showAllHistory')?.addEventListener('click', (e)=>{ e.preventDefault(); switchSection('history'); });
 
+    // Табы
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.closest('.tabs')) {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('depositTab').style.display = btn.dataset.tab === 'depositTab' ? 'block' : 'none';
+          document.getElementById('transferTab').style.display = btn.dataset.tab === 'transferTab' ? 'block' : 'none';
+        }
+      });
+    });
+
     // Заглушки
     document.getElementById('addAccountBtn')?.addEventListener('click', ()=> {
-      const newAcc = { id:'acc'+Date.now(), name:'Новый рублёвый', balance:0, currency:'RUB', number: generateAccountNumber() };
+      const newAcc = { id:'acc'+Date.now(), name:'Новый жестяной', balance:0, currency:'RUB', number: generateAccountNumber() };
       accounts.push(newAcc); saveUserData(); updateUI(); showInfoModal(`Счёт открыт. Номер: ${newAcc.number}`);
     });
     document.getElementById('issueVirtualCardBtn')?.addEventListener('click', ()=> showInfoModal('Виртуальная карта выпущена'));
-    document.getElementById('applyLoanBtn')?.addEventListener('click', ()=> showInfoModal('Заявка отправлена. Одобрение 99%'));
+    document.getElementById('applyLoanBtn')?.addEventListener('click', ()=> showInfoModal('Заявка отправлена'));
     document.getElementById('sendSupportMsg')?.addEventListener('click', ()=> showInfoModal('Сообщение отправлено'));
 
     // Кредитный калькулятор
