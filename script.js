@@ -2,7 +2,7 @@
   "use strict";
 
   // ---------- КОНФИГУРАЦИЯ ----------
-  const EXCHANGE_API_KEY = 'YOUR_API_KEY'; // замените на свой ключ с exchangerate-api.com
+  const EXCHANGE_API_KEY = 'YOUR_API_KEY';
   const BASE_CURRENCY = 'RUB';
   
   // ---------- ГЛОБАЛЬНОЕ ХРАНИЛИЩЕ ----------
@@ -390,13 +390,18 @@
 
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
-    // Пополнение
+    // Демо-пополнение (внесение наличных)
     document.getElementById('depositBtn')?.addEventListener('click', () => {
       const accId = document.getElementById('depositAccountSelect').value;
       const amount = parseFloat(document.getElementById('depositAmount').value);
       if (isNaN(amount) || amount <= 0) return showInfoModal('Введите сумму', false);
       const acc = accounts.find(a => a.id === accId);
-      if (acc) { acc.balance += amount; addTransaction('in', 'Пополнение с внешней карты', amount, accId); saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); }
+      if (acc) { 
+        acc.balance += amount; 
+        addTransaction('in', '💰 Внесение наличных (демо)', amount, accId); 
+        saveUserData(); updateUI(); 
+        showInfoModal(`Счёт пополнен на ${formatMoney(amount)} (демо-наличные)`, true); 
+      }
     });
 
     // Перевод
