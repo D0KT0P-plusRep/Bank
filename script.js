@@ -133,7 +133,7 @@
     if (dashContainer) dashContainer.innerHTML = html || 'Курсы недоступны';
   }
 
-  // Остальные функции рендера (как раньше) с небольшими изменениями
+  // Обновление интерфейса
   function updateTotalBalance() {
     const total = accounts.filter(a=>a.currency==='RUB').reduce((s,a)=>s+a.balance,0);
     totalBalanceSpan.textContent = formatMoney(total);
@@ -173,17 +173,31 @@
         <div class="account-balance">${acc.currency==='TIN'? acc.balance+' 🥫' : formatMoney(acc.balance)}</div>
       </div>
     `).join('');
-    populateSelects();
+    populateSelects(); // Важно: заполняем выпадающие списки после рендера
   }
 
+  // Функция заполнения select'ов (исправлена)
   function populateSelects() {
-    const deposit = document.getElementById('depositAccountSelect');
-    const transfer = document.getElementById('transferFromSelect');
+    const depositSelect = document.getElementById('depositAccountSelect');
+    const transferFromSelect = document.getElementById('transferFromSelect');
     const tradeSelect = document.getElementById('tradeAccountSelect');
-    const rubAccs = accounts.filter(a=>a.currency==='RUB');
-    if (deposit) deposit.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name} (${formatMoney(a.balance)})</option>`).join('');
-    if (transfer) transfer.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
-    if (tradeSelect) tradeSelect.innerHTML = rubAccs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    const rubAccs = accounts.filter(a => a.currency === 'RUB');
+    
+    if (depositSelect) {
+      depositSelect.innerHTML = rubAccs.map(acc => 
+        `<option value="${acc.id}">${acc.name} (${formatMoney(acc.balance)})</option>`
+      ).join('');
+    }
+    if (transferFromSelect) {
+      transferFromSelect.innerHTML = rubAccs.map(acc => 
+        `<option value="${acc.id}">${acc.name}</option>`
+      ).join('');
+    }
+    if (tradeSelect) {
+      tradeSelect.innerHTML = rubAccs.map(acc => 
+        `<option value="${acc.id}">${acc.name}</option>`
+      ).join('');
+    }
   }
 
   function addTransaction(type, desc, amount, accountId) {
@@ -247,8 +261,15 @@
     Object.values(sections).forEach(s => { if(s) s.style.display = 'none'; });
     if (sections[sectionId]) sections[sectionId].style.display = 'block';
     navItems.forEach(i => { i.classList.remove('active'); if(i.dataset.section===sectionId) i.classList.add('active'); });
-    if (sectionId === 'accounts') renderAccountsDetail();
-    if (sectionId === 'dashboard') { renderAccountsOverview(); renderRecentTransactions(); }
+    
+    // При переключении на раздел счетов обновляем детали и селекты
+    if (sectionId === 'accounts') {
+      renderAccountsDetail(); // это вызовет populateSelects()
+    }
+    if (sectionId === 'dashboard') { 
+      renderAccountsOverview(); 
+      renderRecentTransactions(); 
+    }
     if (sectionId === 'trade') {
       const tinAcc = accounts.find(a=>a.currency==='TIN');
       document.getElementById('tinBalanceDisplay').textContent = (tinAcc?.balance || 0) + ' 🥫';
@@ -261,10 +282,11 @@
     updateTotalBalance();
     renderAccountsOverview();
     renderRecentTransactions();
-    renderAccountsDetail();
+    renderAccountsDetail(); // Обновляет и селекты
     const tinAcc = accounts.find(a=>a.currency==='TIN');
     if(tinAcc) document.getElementById('tinBalanceDisplay').textContent = tinAcc.balance + ' 🥫';
-    document.getElementById('currentTinRate').textContent = tinRate.toFixed(2) + ' ₽';
+    const currentRateEl = document.getElementById('currentTinRate');
+    if (currentRateEl) currentRateEl.textContent = tinRate.toFixed(2) + ' ₽';
     if(accounts[0]) document.getElementById('cardBalance1').textContent = formatMoney(accounts[0].balance);
     if(accounts[1]) document.getElementById('cardBalance2').textContent = formatMoney(accounts[1]?.balance || 0);
     calculateTradeTotal();
@@ -379,7 +401,7 @@
       showInfoModal('Профиль обновлён');
     };
 
-    // Торговля ЖЕСТЬЮ (как раньше)
+    // Торговля ЖЕСТЬЮ
     document.getElementById('tradeAmountTin').addEventListener('input', calculateTradeTotal);
     document.getElementById('executeTradeBtn').addEventListener('click', () => {
       const type = document.getElementById('tradeType').value;
@@ -407,7 +429,7 @@
     // Навигация
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
-    // Демо-пополнение (из воздуха)
+    // Демо-пополнение
     document.getElementById('demoDepositBtn')?.addEventListener('click', () => {
       const acc = accounts.find(a => a.currency === 'RUB');
       if (acc) {
@@ -426,7 +448,7 @@
       if (acc) { acc.balance += amount; addTransaction('in', 'Пополнение с внешней карты', amount, accId); saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); }
     });
 
-    // Перевод (включая другим клиентам)
+    // Перевод (исправлен)
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
       const targetNumber = document.getElementById('transferTarget').value.trim();
