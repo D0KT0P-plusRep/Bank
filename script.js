@@ -58,27 +58,24 @@
     localStorage.setItem('bankUsers', JSON.stringify(users));
   }
 
-  // Построение индекса счетов: номер -> { userId, account }
-  function buildAccountIndex() {
-    const index = {};
-    users.forEach(user => {
-      user.accounts.forEach(acc => {
-        index[acc.number] = { userId: user.username, account: acc };
-      });
-    });
-    return index;
-  }
-
-  // Поиск счета получателя по номеру
+  // Поиск пользователя и счета по номеру счета
   function findAccountByNumber(number) {
-    const index = buildAccountIndex();
-    return index[number];
+    for (let user of users) {
+      const account = user.accounts.find(acc => acc.number === number);
+      if (account) {
+        return { user, account };
+      }
+    }
+    return null;
   }
 
   function saveUserData() {
     if (!currentUser) return;
     const idx = users.findIndex(u => u.username === currentUser.username);
-    if (idx !== -1) { users[idx].accounts = accounts; users[idx].transactions = transactions; }
+    if (idx !== -1) { 
+      users[idx].accounts = accounts; 
+      users[idx].transactions = transactions; 
+    }
     saveAllUsers();
     localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
   }
@@ -173,10 +170,9 @@
         <div class="account-balance">${acc.currency==='TIN'? acc.balance+' 🥫' : formatMoney(acc.balance)}</div>
       </div>
     `).join('');
-    populateSelects(); // Важно: заполняем выпадающие списки после рендера
+    populateSelects();
   }
 
-  // Функция заполнения select'ов (исправлена)
   function populateSelects() {
     const depositSelect = document.getElementById('depositAccountSelect');
     const transferFromSelect = document.getElementById('transferFromSelect');
@@ -190,7 +186,7 @@
     }
     if (transferFromSelect) {
       transferFromSelect.innerHTML = rubAccs.map(acc => 
-        `<option value="${acc.id}">${acc.name}</option>`
+        `<option value="${acc.id}">${acc.name} (${acc.number.slice(-4)})</option>`
       ).join('');
     }
     if (tradeSelect) {
@@ -262,9 +258,8 @@
     if (sections[sectionId]) sections[sectionId].style.display = 'block';
     navItems.forEach(i => { i.classList.remove('active'); if(i.dataset.section===sectionId) i.classList.add('active'); });
     
-    // При переключении на раздел счетов обновляем детали и селекты
     if (sectionId === 'accounts') {
-      renderAccountsDetail(); // это вызовет populateSelects()
+      renderAccountsDetail();
     }
     if (sectionId === 'dashboard') { 
       renderAccountsOverview(); 
@@ -282,7 +277,7 @@
     updateTotalBalance();
     renderAccountsOverview();
     renderRecentTransactions();
-    renderAccountsDetail(); // Обновляет и селекты
+    renderAccountsDetail();
     const tinAcc = accounts.find(a=>a.currency==='TIN');
     if(tinAcc) document.getElementById('tinBalanceDisplay').textContent = tinAcc.balance + ' 🥫';
     const currentRateEl = document.getElementById('currentTinRate');
@@ -313,7 +308,7 @@
   function init() {
     // Загружаем курсы
     if (EXCHANGE_API_KEY !== 'YOUR_API_KEY') fetchExchangeRates();
-    else renderExchangeRates(); // заглушки
+    else renderExchangeRates();
 
     landingLoginBtn.onclick = () => authModal.style.display = 'flex';
     landingRegisterBtn.onclick = () => { authModal.style.display = 'flex'; document.getElementById('modalTabRegister').click(); };
@@ -350,7 +345,6 @@
       if (p.length<4) return document.getElementById('modalRegError').textContent = 'Минимум 4 символа';
       if (users.find(x=>x.username===u)) return document.getElementById('modalRegError').textContent = 'Логин занят';
       
-      // Генерируем уникальный номер счета
       const accountNumber = generateAccountNumber();
       const newUser = {
         name, username: u, password: p,
@@ -368,7 +362,7 @@
       showBank();
     };
 
-    // Профиль (без изменений)
+    // Профиль
     profileBtn.onclick = () => {
       if (!currentUser) return;
       const user = users.find(u => u.username === currentUser.username);
@@ -439,67 +433,76 @@
       }
     });
 
-    // Пополнение (имитация внешней карты)
+    // Пополнение с внешней карты
     document.getElementById('depositBtn')?.addEventListener('click', () => {
       const accId = document.getElementById('depositAccountSelect').value;
       const amount = parseFloat(document.getElementById('depositAmount').value);
       if (isNaN(amount) || amount <= 0) return showInfoModal('Введите сумму', false);
       const acc = accounts.find(a => a.id === accId);
-      if (acc) { acc.balance += amount; addTransaction('in', 'Пополнение с внешней карты', amount, accId); saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); }
+      if (acc) { 
+        acc.balance += amount; 
+        addTransaction('in', 'Пополнение с внешней карты', amount, accId); 
+        saveUserData(); 
+        updateUI(); 
+        showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); 
+      }
     });
 
-    // Перевод (исправлен)
+    // ПЕРЕВОД МЕЖДУ КЛИЕНТАМИ (исправлен)
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
       const targetNumber = document.getElementById('transferTarget').value.trim();
       const amount = parseFloat(document.getElementById('transferAmount').value);
-      if (!targetNumber) return showInfoModal('Укажите номер счёта получателя', false);
-      if (isNaN(amount) || amount <= 0) return showInfoModal('Некорректная сумма', false);
-      const fromAcc = accounts.find(a => a.id === fromId);
-      if (!fromAcc) return;
-      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
-
-      // Ищем получателя среди всех пользователей
-      const recipient = findAccountByNumber(targetNumber);
-      if (!recipient) return showInfoModal('Счёт получателя не найден', false);
       
-      // Нельзя переводить самому себе на тот же счёт
-      if (recipient.account.id === fromAcc.id && recipient.userId === currentUser.username) {
-        return showInfoModal('Нельзя перевести на тот же счёт', false);
+      if (!targetNumber) return showInfoModal('Введите номер счёта получателя', false);
+      if (isNaN(amount) || amount <= 0) return showInfoModal('Некорректная сумма', false);
+      
+      const fromAcc = accounts.find(a => a.id === fromId);
+      if (!fromAcc) return showInfoModal('Счёт отправителя не найден', false);
+      if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
+      
+      // Ищем получателя
+      const recipientData = findAccountByNumber(targetNumber);
+      if (!recipientData) return showInfoModal('Счёт получателя не найден', false);
+      
+      const { user: recipientUser, account: recipientAcc } = recipientData;
+      
+      // Проверка на перевод самому себе на тот же счёт
+      if (recipientUser.username === currentUser.username && recipientAcc.id === fromAcc.id) {
+        return showInfoModal('Нельзя перевести на этот же счёт', false);
       }
-
+      
       // Выполняем перевод
       fromAcc.balance -= amount;
-      recipient.account.balance += amount;
+      recipientAcc.balance += amount;
       
-      // Добавляем транзакции обоим
-      addTransaction('out', `Перевод клиенту ${recipient.userId} (${targetNumber})`, amount, fromAcc.id);
+      // Транзакция отправителю
+      addTransaction('out', `Перевод клиенту ${recipientUser.name} (${targetNumber})`, amount, fromAcc.id);
       
-      // Находим пользователя-получателя и добавляем ему транзакцию
-      const recipientUser = users.find(u => u.username === recipient.userId);
-      if (recipientUser) {
-        const recipientAcc = recipientUser.accounts.find(a => a.id === recipient.account.id);
-        if (recipientAcc) {
-          recipientUser.transactions.push({
-            id: Date.now() + 1,
-            type: 'in',
-            desc: `Перевод от ${currentUser.name} (${fromAcc.number})`,
-            amount: amount,
-            date: new Date().toISOString().slice(0,10),
-            account: recipient.account.id
-          });
-        }
+      // Транзакция получателю
+      recipientUser.transactions.push({
+        id: Date.now() + 1,
+        type: 'in',
+        desc: `Перевод от ${currentUser.name} (${fromAcc.number})`,
+        amount: amount,
+        date: new Date().toISOString().slice(0,10),
+        account: recipientAcc.id
+      });
+      
+      saveAllUsers();
+      
+      // Обновляем локальные данные текущего пользователя
+      const updatedCurrentUser = users.find(u => u.username === currentUser.username);
+      if (updatedCurrentUser) {
+        accounts = updatedCurrentUser.accounts;
+        transactions = updatedCurrentUser.transactions;
       }
       
-      saveAllUsers(); // сохраняем обоих пользователей
-      // Обновляем данные текущего пользователя из хранилища
-      const updatedUser = users.find(u => u.username === currentUser.username);
-      if (updatedUser) {
-        accounts = updatedUser.accounts;
-        transactions = updatedUser.transactions;
-      }
       updateUI();
       showInfoModal(`Переведено ${formatMoney(amount)} на счёт ${targetNumber}`, true);
+      
+      // Очищаем поле номера получателя
+      document.getElementById('transferTarget').value = '';
     });
 
     // Фильтры истории
