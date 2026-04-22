@@ -14,6 +14,7 @@
   let exchangeRates = {};
   let starterCapitalReceived = false;
 
+  // DOM
   const landingPage = document.getElementById('landingPage');
   const bankApp = document.getElementById('bankApp');
   const authModal = document.getElementById('authModal');
@@ -44,9 +45,7 @@
     const randomPart = Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
     return prefix + randomPart;
   }
-
   function saveAllUsers() { localStorage.setItem('bankUsers', JSON.stringify(users)); }
-
   function findAccountByNumber(number) {
     const cleanNumber = number.trim();
     for (let user of users) {
@@ -55,7 +54,6 @@
     }
     return null;
   }
-
   function saveUserData() {
     if (!currentUser) return;
     const idx = users.findIndex(u => u.username === currentUser.username);
@@ -63,7 +61,6 @@
     saveAllUsers();
     localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
   }
-
   function loadUserData() {
     if (!currentUser) return;
     const user = users.find(u => u.username === currentUser.username);
@@ -82,7 +79,6 @@
     }
     userNameDisplay.textContent = currentUser?.name || 'Клиент';
   }
-
   async function fetchExchangeRates() {
     try {
       const response = await fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/latest/${BASE_CURRENCY}`);
@@ -96,7 +92,6 @@
       renderExchangeRates();
     }
   }
-
   function renderExchangeRates() {
     const landingContainer = document.getElementById('landingRatesContainer');
     const dashContainer = document.getElementById('dashboardRatesContainer');
@@ -110,7 +105,6 @@
     const total = accounts.filter(a=>a.currency==='RUB').reduce((s,a)=>s+a.balance,0);
     totalBalanceSpan.textContent = formatMoney(total);
   }
-
   function renderAccountsOverview() {
     const cont = document.getElementById('accountsOverview');
     if (!cont) return;
@@ -121,7 +115,6 @@
       </div>
     `).join('');
   }
-
   function renderRecentTransactions() {
     const cont = document.getElementById('recentTransactions');
     if (!cont) return;
@@ -135,7 +128,6 @@
       </div>`;
     }).join('');
   }
-
   function renderAccountsDetail() {
     const list = document.getElementById('accountsDetailList');
     if (!list) return;
@@ -148,7 +140,6 @@
     populateSelects();
     updatePrimaryAccountInfo();
   }
-
   function populateSelects() {
     const transferFromSelect = document.getElementById('transferFromSelect');
     const tradeSelect = document.getElementById('tradeAccountSelect');
@@ -156,7 +147,6 @@
     if (transferFromSelect) transferFromSelect.innerHTML = rubAccs.map(acc => `<option value="${acc.id}">${acc.name} (${acc.number.slice(-4)})</option>`).join('');
     if (tradeSelect) tradeSelect.innerHTML = rubAccs.map(acc => `<option value="${acc.id}">${acc.name}</option>`).join('');
   }
-
   function updatePrimaryAccountInfo() {
     const primaryAcc = accounts.find(a => a.currency === 'RUB');
     const infoBlock = document.getElementById('primaryAccountInfo');
@@ -166,16 +156,13 @@
       infoBlock.style.display = 'block';
     } else if (infoBlock) infoBlock.style.display = 'none';
   }
-
   function addTransaction(type, desc, amount, accountId) {
     transactions.push({ id:Date.now(), type, desc, amount, date:new Date().toISOString().slice(0,10), account:accountId });
   }
-
   function showInfoModal(msg, success=true) {
     modalContent.innerHTML = `<h3>${success?'✅':'⚠️'} БАНКа ЖЕСТЬяная</h3><p>${msg}</p>`;
     infoModal.style.display = 'flex';
   }
-
   function renderHistory() {
     const tbody = document.getElementById('historyTableBody');
     if (!tbody) return;
@@ -191,7 +178,6 @@
       return `<tr><td>${t.date}</td><td>${t.desc}</td><td>${acc.name}</td><td class="${amountClass}">${sign}${formatMoney(t.amount)}</td></tr>`;
     }).join('');
   }
-
   function updateTinRate() {
     tinRate = 7.5 + Math.random() * 1.5;
     document.querySelectorAll('#currentTinRate').forEach(el => el.textContent = tinRate.toFixed(2) + ' ₽');
@@ -200,7 +186,6 @@
     calculateTradeTotal();
   }
   setInterval(updateTinRate, 10000);
-
   function drawChart() {
     const canvas = document.getElementById('tinChart');
     if (!canvas) return;
@@ -217,13 +202,11 @@
     });
     ctx.strokeStyle = '#779F00'; ctx.lineWidth=2.5; ctx.stroke();
   }
-
   function calculateTradeTotal() {
     const amount = parseFloat(document.getElementById('tradeAmountTin')?.value) || 0;
     const totalEl = document.getElementById('tradeTotal');
     if(totalEl) totalEl.textContent = formatMoney(amount * tinRate);
   }
-
   function switchSection(sectionId) {
     Object.values(sections).forEach(s => { if(s) s.style.display = 'none'; });
     if (sections[sectionId]) sections[sectionId].style.display = 'block';
@@ -237,7 +220,6 @@
     }
     if (sectionId === 'history') renderHistory();
   }
-
   function updateUI() {
     updateTotalBalance();
     renderAccountsOverview();
@@ -251,7 +233,6 @@
     calculateTradeTotal();
     if (sections.history.style.display === 'block') renderHistory();
   }
-
   function showBank() {
     landingPage.style.display = 'none';
     bankApp.style.display = 'block';
@@ -259,7 +240,6 @@
     updateUI();
     switchSection('dashboard');
   }
-
   function showLanding() {
     bankApp.style.display = 'none';
     landingPage.style.display = 'block';
@@ -270,7 +250,6 @@
 
   function init() {
     if (EXCHANGE_API_KEY !== 'YOUR_API_KEY') fetchExchangeRates(); else renderExchangeRates();
-
     landingLoginBtn.onclick = () => authModal.style.display = 'flex';
     landingRegisterBtn.onclick = () => { authModal.style.display = 'flex'; document.getElementById('modalTabRegister').click(); };
     logoutBtn.onclick = showLanding;
@@ -305,7 +284,6 @@
       if (p !== c) return document.getElementById('modalRegError').textContent = 'Пароли не совпадают';
       if (p.length<4) return document.getElementById('modalRegError').textContent = 'Минимум 4 символа';
       if (users.find(x=>x.username===u)) return document.getElementById('modalRegError').textContent = 'Логин занят';
-      
       const accountNumber = generateAccountNumber();
       const newUser = {
         name, username: u, password: p,
@@ -381,6 +359,16 @@
 
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
+    document.getElementById('starterCapitalBtn')?.addEventListener('click', () => {
+      if (starterCapitalReceived) return showInfoModal('Стартовый капитал уже получен', false);
+      const primaryAcc = accounts.find(a => a.currency === 'RUB');
+      if (!primaryAcc) return;
+      primaryAcc.balance += 5000;
+      addTransaction('in', '🎁 Стартовый капитал (демо)', 5000, primaryAcc.id);
+      starterCapitalReceived = true;
+      saveUserData(); updateUI(); showInfoModal('На основной счёт зачислено 5000 ₽', true);
+    });
+
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
       const targetNumber = document.getElementById('transferTarget').value.trim();
@@ -390,15 +378,10 @@
       const fromAcc = accounts.find(a => a.id === fromId);
       if (!fromAcc) return showInfoModal('Счёт отправителя не найден', false);
       if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
-      
       const recipientData = findAccountByNumber(targetNumber);
       if (!recipientData) return showInfoModal('Счёт получателя не найден', false);
-      
       const { user: recipientUser, account: recipientAcc } = recipientData;
-      if (recipientUser.username === currentUser.username && recipientAcc.id === fromAcc.id) {
-        return showInfoModal('Нельзя перевести на этот же счёт', false);
-      }
-      
+      if (recipientUser.username === currentUser.username && recipientAcc.id === fromAcc.id) return showInfoModal('Нельзя перевести на этот же счёт', false);
       fromAcc.balance -= amount;
       recipientAcc.balance += amount;
       addTransaction('out', `Перевод клиенту ${recipientUser.name} (${targetNumber})`, amount, fromAcc.id);
@@ -415,18 +398,6 @@
       document.getElementById('transferTarget').value = '';
     });
 
-    document.getElementById('starterCapitalBtn')?.addEventListener('click', () => {
-      if (starterCapitalReceived) return showInfoModal('Стартовый капитал уже был получен ранее', false);
-      const primaryAcc = accounts.find(a => a.currency === 'RUB');
-      if (!primaryAcc) return;
-      primaryAcc.balance += 5000;
-      addTransaction('in', '🎁 Стартовый капитал (демо)', 5000, primaryAcc.id);
-      starterCapitalReceived = true;
-      saveUserData();
-      updateUI();
-      showInfoModal('На ваш основной счёт зачислено 5000 ₽. Теперь вы можете переводить их другим клиентам.', true);
-    });
-
     document.getElementById('copyAccountNumberBtn')?.addEventListener('click', () => {
       const number = document.getElementById('primaryAccountNumber').textContent;
       navigator.clipboard?.writeText(number).then(() => showInfoModal('Номер скопирован')).catch(() => showInfoModal('Не удалось скопировать', false));
@@ -434,7 +405,6 @@
 
     document.getElementById('historyFilterType')?.addEventListener('change', renderHistory);
     document.getElementById('historySearch')?.addEventListener('input', renderHistory);
-
     document.getElementById('quickTransferBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('showAllHistory')?.addEventListener('click', (e)=>{ e.preventDefault(); switchSection('history'); });
 
