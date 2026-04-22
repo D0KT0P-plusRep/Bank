@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<!-- ГЛАВНАЯ СТРАНИЦА -->
+<!-- ГЛАВНАЯ СТРАНИЦА (ЛЕНДИНГ) -->
 <div id="landingPage">
   <header class="landing-header">
     <div class="container header-content">
@@ -24,6 +24,7 @@
       </div>
     </div>
   </header>
+
   <main>
     <section class="hero">
       <div class="container hero-content">
@@ -79,6 +80,7 @@
       </div>
     </div>
   </header>
+
   <main class="container dashboard">
     <!-- Dashboard -->
     <section id="section-dashboard" class="section-content">
@@ -89,27 +91,54 @@
       </div>
       <div class="card" style="margin-top:24px;"><div class="card-header"><h3>Последние операции</h3><a href="#" id="showAllHistory">Все <i class="fas fa-arrow-right"></i></a></div><div id="recentTransactions"></div></div>
     </section>
+
     <!-- Счета -->
     <section id="section-accounts" class="section-content" style="display:none;">
       <div class="section-title"><i class="fas fa-coins"></i> Управление счетами</div>
       <div class="grid-2col">
-        <div class="card"><h3>Ваши счета</h3><div id="accountsDetailList"></div><button class="btn btn-outline w-100 mt-4" id="addAccountBtn"><i class="fas fa-plus"></i> Открыть новый счёт</button><button class="btn btn-accent w-100 mt-2" id="demoDepositBtn"><i class="fas fa-coins"></i> Пополнить на 1000 ₽ (демо)</button></div>
-        <div class="card"><div class="tabs"><button class="tab-btn active" data-tab="depositTab">Пополнение</button><button class="tab-btn" data-tab="transferTab">Перевод</button></div>
-          <div id="depositTab" class="tab-content"><div class="form-group"><label>Счёт пополнения</label><select id="depositAccountSelect" class="form-control"></select></div><div class="form-group"><label>Сумма (₽)</label><input type="number" id="depositAmount" class="form-control" value="1000" min="1"></div><button class="btn btn-accent w-100" id="depositBtn"><i class="fas fa-arrow-down"></i> Пополнить</button><p class="text-muted small mt-2">Пополнение с внешней карты (демо)</p></div>
-          <div id="transferTab" class="tab-content" style="display:none;"><div class="form-group"><label>Со счёта</label><select id="transferFromSelect" class="form-control"></select></div><div class="form-group"><label>Номер счёта получателя</label><input type="text" id="transferTarget" class="form-control" placeholder="40817..."></div><div class="form-group"><label>Сумма</label><input type="number" id="transferAmount" class="form-control" value="100" min="1"></div><button class="btn w-100" id="transferBtn"><i class="fas fa-paper-plane"></i> Перевести</button></div>
+        <div class="card">
+          <h3>Ваши счета</h3>
+          <div id="accountsDetailList"></div>
+          <button class="btn btn-outline w-100 mt-4" id="addAccountBtn"><i class="fas fa-plus"></i> Открыть новый счёт</button>
+          <!-- Блок с номером основного счета для копирования -->
+          <div id="primaryAccountInfo" class="mt-4 p-3" style="background: var(--bg-light); border-radius: 16px; display: none;">
+            <p class="small text-muted">Номер вашего рублёвого счёта:</p>
+            <code id="primaryAccountNumber" style="font-size: 1rem; word-break: break-all;"></code>
+            <button class="btn-outline btn-small mt-2" id="copyAccountNumberBtn"><i class="fas fa-copy"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="depositTab">Пополнение</button>
+            <button class="tab-btn" data-tab="transferTab">Перевод</button>
+          </div>
+          <div id="depositTab" class="tab-content">
+            <div class="form-group"><label>Счёт пополнения</label><select id="depositAccountSelect" class="form-control"></select></div>
+            <div class="form-group"><label>Сумма (₽)</label><input type="number" id="depositAmount" class="form-control" value="1000" min="1"></div>
+            <button class="btn btn-accent w-100" id="depositBtn"><i class="fas fa-arrow-down"></i> Пополнить с внешней карты</button>
+          </div>
+          <div id="transferTab" class="tab-content" style="display:none;">
+            <div class="form-group"><label>Со счёта</label><select id="transferFromSelect" class="form-control"></select></div>
+            <div class="form-group"><label>Номер счёта получателя</label><input type="text" id="transferTarget" class="form-control" placeholder="40817..."></div>
+            <div class="form-group"><label>Сумма</label><input type="number" id="transferAmount" class="form-control" value="100" min="1"></div>
+            <button class="btn w-100" id="transferBtn"><i class="fas fa-paper-plane"></i> Перевести</button>
+          </div>
         </div>
       </div>
     </section>
+
     <!-- Торговля ЖЕСТЬЮ -->
     <section id="section-trade" class="section-content" style="display:none;">
       <div class="section-title"><i class="fas fa-exchange-alt"></i> Торговля валютой ЖЕСТЬ</div>
       <div class="grid-2col"><div class="card"><h3>Купить / Продать</h3><div class="trade-widget"><div class="form-group"><label>Тип</label><select id="tradeType" class="form-control"><option value="buy">Купить ЖЕСТЬ за RUB</option><option value="sell">Продать ЖЕСТЬ за RUB</option></select></div><div class="form-group"><label>Счёт</label><select id="tradeAccountSelect" class="form-control"></select></div><div class="form-group"><label>Количество ЖЕСТИ</label><input type="number" id="tradeAmountTin" class="form-control" value="10" min="1"></div><div class="trade-info"><p>Курс: 1 🥫 = <span id="currentTinRate">7.82</span> ₽</p><p>Итого: <span id="tradeTotal">0</span> ₽</p><p>Баланс ЖЕСТИ: <span id="tinBalanceDisplay">0 🥫</span></p></div><button class="btn btn-accent w-100" id="executeTradeBtn"><i class="fas fa-check"></i> Выполнить</button></div></div><div class="card"><h3>График ЖЕСТИ</h3><div class="chart-placeholder"><canvas id="tinChart" width="300" height="150"></canvas></div></div></div>
     </section>
+
     <!-- История -->
     <section id="section-history" class="section-content" style="display:none;">
       <div class="section-title"><i class="fas fa-history"></i> История операций</div>
       <div class="card"><div class="history-controls"><select id="historyFilterType" class="form-control" style="width:auto"><option value="all">Все</option><option value="in">Доходы</option><option value="out">Расходы</option></select><input type="text" id="historySearch" class="form-control" placeholder="Поиск..."></div><div class="history-table-wrapper"><table class="history-table"><thead><tr><th>Дата</th><th>Описание</th><th>Счёт</th><th>Сумма</th></tr></thead><tbody id="historyTableBody"></tbody></table></div></div>
     </section>
+
     <!-- Карты, Кредиты, Поддержка (заглушки) -->
     <section id="section-cards" class="section-content" style="display:none;"><div class="section-title">Виртуальные карты</div><div class="grid-3col"><div class="card"><i class="fab fa-cc-visa"></i><h3>Black</h3><p>Баланс: <span id="cardBalance1">0 ₽</span></p></div><div class="card"><i class="fab fa-cc-mastercard"></i><h3>Gold</h3><p>Баланс: <span id="cardBalance2">0 ₽</span></p></div><div class="card"><i class="fas fa-jar"></i><h3>Цифровая</h3><button class="btn btn-small" id="issueVirtualCardBtn">Выпустить</button></div></div></section>
     <section id="section-loans" class="section-content" style="display:none;"><div class="section-title">Кредиты</div><div class="grid-2col"><div class="card"><h3>Калькулятор</h3><div><label>Сумма: <span id="loanAmountLabel">300 000 ₽</span></label><input type="range" min="50000" max="2000000" value="300000" id="loanSlider"><label>Срок: <span id="loanTermLabel">12 мес.</span></label><input type="range" min="6" max="60" value="12" id="loanTermSlider"><div id="loanCalcResult">Платёж: ≈ 26 800 ₽</div></div></div><div class="card"><h3>Предложения</h3><ul><li>Ипотека от 4.5%</li><li>Автокредит</li></ul><button class="btn btn-accent w-100" id="applyLoanBtn">Оставить заявку</button></div></div></section>
