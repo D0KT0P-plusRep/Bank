@@ -11,11 +11,8 @@
   let tinRate = 7.82;
   const rateHistory = [7.82, 7.85, 7.79, 7.90, 7.88, 7.95, 7.92, 7.89, 7.86, 7.82];
   
-  // Данные текущего пользователя
   let accounts = [];
   let transactions = [];
-
-  // Кэш курсов валют
   let exchangeRates = {};
 
   // DOM элементы
@@ -43,28 +40,23 @@
   };
   const navItems = document.querySelectorAll('.nav-item');
 
-  // Вспомогательные функции
   function formatMoney(amount) { return new Intl.NumberFormat('ru-RU').format(amount) + ' ₽'; }
   
-  // Генерация уникального номера счёта (20 цифр, начинается с 40817)
   function generateAccountNumber() {
     const prefix = '40817';
     const randomPart = Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
     return prefix + randomPart;
   }
 
-  // Сохранение всех пользователей
   function saveAllUsers() {
     localStorage.setItem('bankUsers', JSON.stringify(users));
   }
 
-  // Поиск пользователя и счета по номеру счета
   function findAccountByNumber(number) {
+    const cleanNumber = number.trim();
     for (let user of users) {
-      const account = user.accounts.find(acc => acc.number === number);
-      if (account) {
-        return { user, account };
-      }
+      const account = user.accounts.find(acc => acc.number === cleanNumber);
+      if (account) return { user, account };
     }
     return null;
   }
@@ -72,10 +64,7 @@
   function saveUserData() {
     if (!currentUser) return;
     const idx = users.findIndex(u => u.username === currentUser.username);
-    if (idx !== -1) { 
-      users[idx].accounts = accounts; 
-      users[idx].transactions = transactions; 
-    }
+    if (idx !== -1) { users[idx].accounts = accounts; users[idx].transactions = transactions; }
     saveAllUsers();
     localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
   }
@@ -98,7 +87,6 @@
     userNameDisplay.textContent = currentUser?.name || 'Клиент';
   }
 
-  // Загрузка курсов валют с API
   async function fetchExchangeRates() {
     try {
       const response = await fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/latest/${BASE_CURRENCY}`);
@@ -108,7 +96,6 @@
         renderExchangeRates();
       }
     } catch (error) {
-      console.warn('Не удалось загрузить курсы валют, используются заглушки');
       exchangeRates = { USD: 92.5, EUR: 100.2, CNY: 12.8, GBP: 115.3 };
       renderExchangeRates();
     }
@@ -118,19 +105,11 @@
     const landingContainer = document.getElementById('landingRatesContainer');
     const dashContainer = document.getElementById('dashboardRatesContainer');
     const rates = Object.entries(exchangeRates).filter(([code]) => code !== BASE_CURRENCY).slice(0, 5);
-    
-    const html = rates.map(([code, rate]) => `
-      <div class="rate-item">
-        <span class="rate-currency">${code}</span>
-        <span class="rate-value">${rate.toFixed(2)} ₽</span>
-      </div>
-    `).join('');
-    
+    const html = rates.map(([code, rate]) => `<div class="rate-item"><span class="rate-currency">${code}</span><span class="rate-value">${rate.toFixed(2)} ₽</span></div>`).join('');
     if (landingContainer) landingContainer.innerHTML = html || 'Курсы недоступны';
     if (dashContainer) dashContainer.innerHTML = html || 'Курсы недоступны';
   }
 
-  // Обновление интерфейса
   function updateTotalBalance() {
     const total = accounts.filter(a=>a.currency==='RUB').reduce((s,a)=>s+a.balance,0);
     totalBalanceSpan.textContent = formatMoney(total);
@@ -171,6 +150,7 @@
       </div>
     `).join('');
     populateSelects();
+    updatePrimaryAccountInfo();
   }
 
   function populateSelects() {
@@ -178,21 +158,20 @@
     const transferFromSelect = document.getElementById('transferFromSelect');
     const tradeSelect = document.getElementById('tradeAccountSelect');
     const rubAccs = accounts.filter(a => a.currency === 'RUB');
-    
-    if (depositSelect) {
-      depositSelect.innerHTML = rubAccs.map(acc => 
-        `<option value="${acc.id}">${acc.name} (${formatMoney(acc.balance)})</option>`
-      ).join('');
-    }
-    if (transferFromSelect) {
-      transferFromSelect.innerHTML = rubAccs.map(acc => 
-        `<option value="${acc.id}">${acc.name} (${acc.number.slice(-4)})</option>`
-      ).join('');
-    }
-    if (tradeSelect) {
-      tradeSelect.innerHTML = rubAccs.map(acc => 
-        `<option value="${acc.id}">${acc.name}</option>`
-      ).join('');
+    if (depositSelect) depositSelect.innerHTML = rubAccs.map(acc => `<option value="${acc.id}">${acc.name} (${formatMoney(acc.balance)})</option>`).join('');
+    if (transferFromSelect) transferFromSelect.innerHTML = rubAccs.map(acc => `<option value="${acc.id}">${acc.name} (${acc.number.slice(-4)})</option>`).join('');
+    if (tradeSelect) tradeSelect.innerHTML = rubAccs.map(acc => `<option value="${acc.id}">${acc.name}</option>`).join('');
+  }
+
+  function updatePrimaryAccountInfo() {
+    const primaryAcc = accounts.find(a => a.currency === 'RUB');
+    const infoBlock = document.getElementById('primaryAccountInfo');
+    const numberEl = document.getElementById('primaryAccountNumber');
+    if (primaryAcc && infoBlock && numberEl) {
+      numberEl.textContent = primaryAcc.number;
+      infoBlock.style.display = 'block';
+    } else if (infoBlock) {
+      infoBlock.style.display = 'none';
     }
   }
 
@@ -257,14 +236,8 @@
     Object.values(sections).forEach(s => { if(s) s.style.display = 'none'; });
     if (sections[sectionId]) sections[sectionId].style.display = 'block';
     navItems.forEach(i => { i.classList.remove('active'); if(i.dataset.section===sectionId) i.classList.add('active'); });
-    
-    if (sectionId === 'accounts') {
-      renderAccountsDetail();
-    }
-    if (sectionId === 'dashboard') { 
-      renderAccountsOverview(); 
-      renderRecentTransactions(); 
-    }
+    if (sectionId === 'accounts') renderAccountsDetail();
+    if (sectionId === 'dashboard') { renderAccountsOverview(); renderRecentTransactions(); }
     if (sectionId === 'trade') {
       const tinAcc = accounts.find(a=>a.currency==='TIN');
       document.getElementById('tinBalanceDisplay').textContent = (tinAcc?.balance || 0) + ' 🥫';
@@ -280,8 +253,7 @@
     renderAccountsDetail();
     const tinAcc = accounts.find(a=>a.currency==='TIN');
     if(tinAcc) document.getElementById('tinBalanceDisplay').textContent = tinAcc.balance + ' 🥫';
-    const currentRateEl = document.getElementById('currentTinRate');
-    if (currentRateEl) currentRateEl.textContent = tinRate.toFixed(2) + ' ₽';
+    document.getElementById('currentTinRate').textContent = tinRate.toFixed(2) + ' ₽';
     if(accounts[0]) document.getElementById('cardBalance1').textContent = formatMoney(accounts[0].balance);
     if(accounts[1]) document.getElementById('cardBalance2').textContent = formatMoney(accounts[1]?.balance || 0);
     calculateTradeTotal();
@@ -306,9 +278,7 @@
 
   // ---------- ИНИЦИАЛИЗАЦИЯ ----------
   function init() {
-    // Загружаем курсы
-    if (EXCHANGE_API_KEY !== 'YOUR_API_KEY') fetchExchangeRates();
-    else renderExchangeRates();
+    if (EXCHANGE_API_KEY !== 'YOUR_API_KEY') fetchExchangeRates(); else renderExchangeRates();
 
     landingLoginBtn.onclick = () => authModal.style.display = 'flex';
     landingRegisterBtn.onclick = () => { authModal.style.display = 'flex'; document.getElementById('modalTabRegister').click(); };
@@ -362,7 +332,6 @@
       showBank();
     };
 
-    // Профиль
     profileBtn.onclick = () => {
       if (!currentUser) return;
       const user = users.find(u => u.username === currentUser.username);
@@ -395,7 +364,6 @@
       showInfoModal('Профиль обновлён');
     };
 
-    // Торговля ЖЕСТЬЮ
     document.getElementById('tradeAmountTin').addEventListener('input', calculateTradeTotal);
     document.getElementById('executeTradeBtn').addEventListener('click', () => {
       const type = document.getElementById('tradeType').value;
@@ -420,92 +388,58 @@
       saveUserData(); updateUI(); showInfoModal(`Операция выполнена. Курс: ${tinRate.toFixed(2)}₽`, true);
     });
 
-    // Навигация
     navItems.forEach(item => item.addEventListener('click', (e) => { e.preventDefault(); switchSection(item.dataset.section); }));
 
-    // Демо-пополнение
-    document.getElementById('demoDepositBtn')?.addEventListener('click', () => {
-      const acc = accounts.find(a => a.currency === 'RUB');
-      if (acc) {
-        acc.balance += 1000;
-        addTransaction('in', 'Демо-пополнение (внесение наличных)', 1000, acc.id);
-        saveUserData(); updateUI(); showInfoModal('Счёт пополнен на 1000 ₽ (демо)', true);
-      }
-    });
-
-    // Пополнение с внешней карты
+    // Пополнение
     document.getElementById('depositBtn')?.addEventListener('click', () => {
       const accId = document.getElementById('depositAccountSelect').value;
       const amount = parseFloat(document.getElementById('depositAmount').value);
       if (isNaN(amount) || amount <= 0) return showInfoModal('Введите сумму', false);
       const acc = accounts.find(a => a.id === accId);
-      if (acc) { 
-        acc.balance += amount; 
-        addTransaction('in', 'Пополнение с внешней карты', amount, accId); 
-        saveUserData(); 
-        updateUI(); 
-        showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); 
-      }
+      if (acc) { acc.balance += amount; addTransaction('in', 'Пополнение с внешней карты', amount, accId); saveUserData(); updateUI(); showInfoModal(`Счёт пополнен на ${formatMoney(amount)}`); }
     });
 
-    // ПЕРЕВОД МЕЖДУ КЛИЕНТАМИ (исправлен)
+    // Перевод
     document.getElementById('transferBtn')?.addEventListener('click', () => {
       const fromId = document.getElementById('transferFromSelect').value;
       const targetNumber = document.getElementById('transferTarget').value.trim();
       const amount = parseFloat(document.getElementById('transferAmount').value);
-      
       if (!targetNumber) return showInfoModal('Введите номер счёта получателя', false);
       if (isNaN(amount) || amount <= 0) return showInfoModal('Некорректная сумма', false);
-      
       const fromAcc = accounts.find(a => a.id === fromId);
       if (!fromAcc) return showInfoModal('Счёт отправителя не найден', false);
       if (fromAcc.balance < amount) return showInfoModal('Недостаточно средств', false);
       
-      // Ищем получателя
       const recipientData = findAccountByNumber(targetNumber);
       if (!recipientData) return showInfoModal('Счёт получателя не найден', false);
       
       const { user: recipientUser, account: recipientAcc } = recipientData;
-      
-      // Проверка на перевод самому себе на тот же счёт
       if (recipientUser.username === currentUser.username && recipientAcc.id === fromAcc.id) {
         return showInfoModal('Нельзя перевести на этот же счёт', false);
       }
       
-      // Выполняем перевод
       fromAcc.balance -= amount;
       recipientAcc.balance += amount;
-      
-      // Транзакция отправителю
       addTransaction('out', `Перевод клиенту ${recipientUser.name} (${targetNumber})`, amount, fromAcc.id);
-      
-      // Транзакция получателю
       recipientUser.transactions.push({
-        id: Date.now() + 1,
-        type: 'in',
+        id: Date.now() + 1, type: 'in',
         desc: `Перевод от ${currentUser.name} (${fromAcc.number})`,
-        amount: amount,
-        date: new Date().toISOString().slice(0,10),
-        account: recipientAcc.id
+        amount, date: new Date().toISOString().slice(0,10), account: recipientAcc.id
       });
-      
       saveAllUsers();
-      
-      // Обновляем локальные данные текущего пользователя
       const updatedCurrentUser = users.find(u => u.username === currentUser.username);
-      if (updatedCurrentUser) {
-        accounts = updatedCurrentUser.accounts;
-        transactions = updatedCurrentUser.transactions;
-      }
-      
+      if (updatedCurrentUser) { accounts = updatedCurrentUser.accounts; transactions = updatedCurrentUser.transactions; }
       updateUI();
       showInfoModal(`Переведено ${formatMoney(amount)} на счёт ${targetNumber}`, true);
-      
-      // Очищаем поле номера получателя
       document.getElementById('transferTarget').value = '';
     });
 
-    // Фильтры истории
+    // Копирование номера счёта
+    document.getElementById('copyAccountNumberBtn')?.addEventListener('click', () => {
+      const number = document.getElementById('primaryAccountNumber').textContent;
+      navigator.clipboard?.writeText(number).then(() => showInfoModal('Номер скопирован')).catch(() => showInfoModal('Не удалось скопировать', false));
+    });
+
     document.getElementById('historyFilterType')?.addEventListener('change', renderHistory);
     document.getElementById('historySearch')?.addEventListener('input', renderHistory);
 
@@ -513,7 +447,6 @@
     document.getElementById('quickTransferBtn')?.addEventListener('click', ()=> switchSection('accounts'));
     document.getElementById('showAllHistory')?.addEventListener('click', (e)=>{ e.preventDefault(); switchSection('history'); });
 
-    // Табы
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.closest('.tabs')) {
@@ -525,7 +458,6 @@
       });
     });
 
-    // Заглушки
     document.getElementById('addAccountBtn')?.addEventListener('click', ()=> {
       const newAcc = { id:'acc'+Date.now(), name:'Новый жестяной', balance:0, currency:'RUB', number: generateAccountNumber() };
       accounts.push(newAcc); saveUserData(); updateUI(); showInfoModal(`Счёт открыт. Номер: ${newAcc.number}`);
@@ -534,7 +466,6 @@
     document.getElementById('applyLoanBtn')?.addEventListener('click', ()=> showInfoModal('Заявка отправлена'));
     document.getElementById('sendSupportMsg')?.addEventListener('click', ()=> showInfoModal('Сообщение отправлено'));
 
-    // Кредитный калькулятор
     const loanSlider = document.getElementById('loanSlider');
     const loanTerm = document.getElementById('loanTermSlider');
     const amountLabel = document.getElementById('loanAmountLabel');
