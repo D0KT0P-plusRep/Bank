@@ -1,6 +1,35 @@
 (function(){
   "use strict";
 
+  // Firebase конфигурация - замените на свои данные из Firebase Console
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abc123"
+  };
+  
+  // Инициализация Firebase
+  let db = null;
+  let auth = null;
+  let useFirebase = false;
+  
+  try {
+    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      auth = firebase.auth();
+      useFirebase = true;
+      console.log('✅ Firebase подключён');
+    } else {
+      console.log('⚠️ Firebase не настроен, используется локальное хранилище');
+    }
+  } catch (e) {
+    console.error('Ошибка Firebase:', e);
+  }
+
   const EXCHANGE_API_KEY = 'YOUR_API_KEY';
   const BASE_CURRENCY = 'RUB';
   
@@ -13,6 +42,70 @@
   let transactions = [];
   let exchangeRates = {};
   let starterCapitalReceived = false;
+  
+  // Синхронизация с Firebase
+  let userDataUnsubscribe = null;
+  
+  async function syncDataToFirebase() {
+    if (!useFirebase || !currentUser || !db) return;
+    try {
+      const userRef = db.collection('users').doc(currentUser.username);
+      await userRef.set({
+        name: currentUser.name,
+        username: currentUser.username,
+        accounts: accounts,
+        transactions: transactions,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      console.log('🔄 Данные синхронизированы с Firebase');
+    } catch (e) {
+      console.error('Ошибка синхронизации:', e);
+    }
+  }
+  
+  async function loadUserDataFromFirebase() {
+    if (!useFirebase || !currentUser || !db) return false;
+    try {
+      const userRef = db.collection('users').doc(currentUser.username);
+      const doc = await userRef.get();
+      if (doc.exists) {
+        const data = doc.data();
+        accounts = data.accounts || [];
+        transactions = data.transactions || [];
+        console.log('📥 Данные загружены из Firebase');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Ошибка загрузки из Firebase:', e);
+      return false;
+    }
+  }
+  
+  function setupRealtimeSync() {
+    if (!useFirebase || !currentUser || !db) return;
+    if (userDataUnsubscribe) userDataUnsubscribe();
+    
+    const userRef = db.collection('users').doc(currentUser.username);
+    userDataUnsubscribe = userRef.onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        accounts = data.accounts || [];
+        transactions = data.transactions || [];
+        console.log('🔔 Получены обновления в реальном времени');
+        updateUI();
+      }
+    }, (error) => {
+      console.error('Ошибка realtime-синхронизации:', error);
+    });
+  }
+  
+  function cleanupSync() {
+    if (userDataUnsubscribe) {
+      userDataUnsubscribe();
+      userDataUnsubscribe = null;
+    }
+  }
 
   // DOM
   const landingPage = document.getElementById('landingPage');
@@ -60,9 +153,21 @@
     if (idx !== -1) { users[idx].accounts = accounts; users[idx].transactions = transactions; }
     saveAllUsers();
     localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
+    syncDataToFirebase(); // Синхронизация с Firebase
   }
-  function loadUserData() {
+  async function loadUserData() {
     if (!currentUser) return;
+    
+    // Пробуем загрузить из Firebase, если он подключён
+    if (useFirebase) {
+      const loadedFromFirebase = await loadUserDataFromFirebase();
+      if (loadedFromFirebase) {
+        userNameDisplay.textContent = currentUser?.name || 'Клиент';
+        return;
+      }
+    }
+    
+    // Fallback на localStorage
     const user = users.find(u => u.username === currentUser.username);
     if (user) {
       accounts = user.accounts || [];
@@ -233,10 +338,11 @@
     calculateTradeTotal();
     if (sections.history.style.display === 'block') renderHistory();
   }
-  function showBank() {
+  async function showBank() {
     landingPage.style.display = 'none';
     bankApp.style.display = 'block';
-    loadUserData();
+    await loadUserData();
+    setupRealtimeSync(); // Включаем realtime-синхронизацию
     updateUI();
     switchSection('dashboard');
   }
@@ -244,6 +350,7 @@
     bankApp.style.display = 'none';
     landingPage.style.display = 'block';
     authModal.style.display = 'none';
+    cleanupSync(); // Отключаем синхронизацию при выходе
     currentUser = null;
     localStorage.removeItem('bankCurrentUser');
   }
@@ -275,7 +382,7 @@
       } else document.getElementById('modalLoginError').textContent = 'Неверные данные';
     };
 
-    document.getElementById('modalRegisterForm').onsubmit = (e) => {
+    document.getElementById('modalRegisterForm').onsubmit = async (e) => {
       e.preventDefault();
       const name = document.getElementById('modalRegName').value.trim();
       const u = document.getElementById('modalRegUsername').value.trim();
@@ -295,6 +402,24 @@
       };
       users.push(newUser);
       saveAllUsers();
+      
+      // Сохраняем в Firebase при регистрации
+      if (useFirebase && db) {
+        try {
+          await db.collection('users').doc(u).set({
+            name: name,
+            username: u,
+            password: p,
+            accounts: newUser.accounts,
+            transactions: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          console.log('📤 Пользователь сохранён в Firebase');
+        } catch (err) {
+          console.error('Ошибка сохранения в Firebase:', err);
+        }
+      }
+      
       currentUser = { username: u, name };
       localStorage.setItem('bankCurrentUser', JSON.stringify(currentUser));
       authModal.style.display = 'none';
